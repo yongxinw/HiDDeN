@@ -17,36 +17,48 @@ def randomCrop(img, height, width):
     assert img.shape[1] >= width
     x = np.random.randint(0, img.shape[1] - width)
     y = np.random.randint(0, img.shape[0] - height)
-    img = img[y:y+height, x:x+width]
+    img = img[y : y + height, x : x + width]
     return img
 
 
 def main():
     if torch.cuda.is_available():
-        device = torch.device('cuda')
+        device = torch.device("cuda")
     else:
-        device = torch.device('cpu')
+        device = torch.device("cpu")
 
-    parser = argparse.ArgumentParser(description='Test trained models')
-    parser.add_argument('--options-file', '-o', default='options-and-config.pickle', type=str,
-                        help='The file where the simulation options are stored.')
-    parser.add_argument('--checkpoint-file', '-c', required=True, type=str, help='Model checkpoint file')
-    parser.add_argument('--batch-size', '-b', default=12, type=int, help='The batch size.')
-    parser.add_argument('--source-image', '-s', required=True, type=str,
-                        help='The image to watermark')
+    parser = argparse.ArgumentParser(description="Test trained models")
+    parser.add_argument(
+        "--options-file",
+        "-o",
+        default="options-and-config.pickle",
+        type=str,
+        help="The file where the simulation options are stored.",
+    )
+    parser.add_argument(
+        "--checkpoint-file", "-c", required=True, type=str, help="Model checkpoint file"
+    )
+    parser.add_argument(
+        "--batch-size", "-b", default=12, type=int, help="The batch size."
+    )
+    parser.add_argument(
+        "--source-image", "-s", required=True, type=str, help="The image to watermark"
+    )
     # parser.add_argument('--times', '-t', default=10, type=int,
     #                     help='Number iterations (insert watermark->extract).')
 
     args = parser.parse_args()
 
     train_options, hidden_config, noise_config = utils.load_options(args.options_file)
-    noiser = Noiser(noise_config)
+    noiser = Noiser(noise_config, device=device)
 
     checkpoint = torch.load(args.checkpoint_file)
     hidden_net = Hidden(hidden_config, device, noiser, None)
     utils.model_from_checkpoint(hidden_net, checkpoint)
 
+    # import ipdb
 
+    # ipdb.set_trace()
     image_pil = Image.open(args.source_image)
     image = randomCrop(np.array(image_pil), hidden_config.H, hidden_config.W)
     image_tensor = TF.to_tensor(image).to(device)
@@ -54,19 +66,30 @@ def main():
     image_tensor.unsqueeze_(0)
 
     # for t in range(args.times):
-    message = torch.Tensor(np.random.choice([0, 1], (image_tensor.shape[0],
-                                                    hidden_config.message_length))).to(device)
-    losses, (encoded_images, noised_images, decoded_messages) = hidden_net.validate_on_batch([image_tensor, message])
+    message = torch.Tensor(
+        np.random.choice([0, 1], (image_tensor.shape[0], hidden_config.message_length))
+    ).to(device)
+    losses, (
+        encoded_images,
+        noised_images,
+        decoded_messages,
+    ) = hidden_net.validate_on_batch([image_tensor, message])
     decoded_rounded = decoded_messages.detach().cpu().numpy().round().clip(0, 1)
     message_detached = message.detach().cpu().numpy()
-    print('original: {}'.format(message_detached))
-    print('decoded : {}'.format(decoded_rounded))
-    print('error : {:.3f}'.format(np.mean(np.abs(decoded_rounded - message_detached))))
-    utils.save_images(image_tensor.cpu(), encoded_images.cpu(), 'test', '.', resize_to=(256, 256))
+    print("original: {}".format(message_detached))
+    print("decoded : {}".format(decoded_rounded))
+    print("error : {:.3f}".format(np.mean(np.abs(decoded_rounded - message_detached))))
 
+    image_tensor_pil = TF.to_pil_image((image_tensor[0].cpu() + 1) / 2)
+    encoded_images_pil = TF.to_pil_image((encoded_images[0] + 1) / 2)
+    # utils.save_images(
+    #     image_tensor.cpu(), encoded_images.cpu(), "test", ".", resize_to=(256, 256)
+    # )
+    import ipdb
+
+    ipdb.set_trace()
     # bitwise_avg_err = np.sum(np.abs(decoded_rounded - message.detach().cpu().numpy()))/(image_tensor.shape[0] * messages.shape[1])
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

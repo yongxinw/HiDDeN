@@ -43,12 +43,6 @@ def main():
     new_run_parser.add_argument(
         "--name", required=True, type=str, help="The name of the experiment."
     )
-    new_run_parser.add_argument(
-        "--runs_folder",
-        required=True,
-        type=str,
-        help="The folder to store experiment results.",
-    )
 
     new_run_parser.add_argument(
         "--size",
@@ -153,16 +147,12 @@ def main():
             number_of_epochs=args.epochs,
             train_folder=os.path.join(args.data_dir, "train"),
             validation_folder=os.path.join(args.data_dir, "val"),
-            # runs_folder=os.path.join(".", "runs"),
-            runs_folder=os.path.join(args.runs_folder, "runs"),
+            runs_folder=os.path.join(".", "runs"),
             start_epoch=start_epoch,
             experiment_name=args.name,
         )
 
         noise_config = args.noise if args.noise is not None else []
-        # import ipdb
-
-        # ipdb.set_trace()
         hidden_config = HiDDenConfiguration(
             H=args.size,
             W=args.size,
@@ -212,7 +202,6 @@ def main():
     else:
         tb_logger = None
 
-    # device_ids = list(range(torch.cuda.device_count()))
     noiser = Noiser(noise_config, device)
     model = Hidden(hidden_config, device, noiser, tb_logger)
 

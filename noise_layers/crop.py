@@ -28,8 +28,14 @@ def get_random_rectangle_inside(image, height_ratio_range, width_ratio_range):
     image_height = image.shape[2]
     image_width = image.shape[3]
 
-    remaining_height = int(np.rint(random_float(height_ratio_range[0], height_ratio_range[1]) * image_height))
-    remaining_width = int(np.rint(random_float(width_ratio_range[0], width_ratio_range[0]) * image_width))
+    remaining_height = int(
+        np.rint(
+            random_float(height_ratio_range[0], height_ratio_range[1]) * image_height
+        )
+    )
+    remaining_width = int(
+        np.rint(random_float(width_ratio_range[0], width_ratio_range[0]) * image_width)
+    )
 
     if remaining_height == image_height:
         height_start = 0
@@ -41,7 +47,12 @@ def get_random_rectangle_inside(image, height_ratio_range, width_ratio_range):
     else:
         width_start = np.random.randint(0, image_width - remaining_width)
 
-    return height_start, height_start+remaining_height, width_start, width_start+remaining_width
+    return (
+        height_start,
+        height_start + remaining_height,
+        width_start,
+        width_start + remaining_width,
+    )
 
 
 class Crop(nn.Module):
@@ -49,6 +60,7 @@ class Crop(nn.Module):
     Randomly crops the image from top/bottom and left/right. The amount to crop is controlled by parameters
     heigth_ratio_range and width_ratio_range
     """
+
     def __init__(self, height_ratio_range, width_ratio_range):
         """
 
@@ -59,17 +71,17 @@ class Crop(nn.Module):
         self.height_ratio_range = height_ratio_range
         self.width_ratio_range = width_ratio_range
 
-
-    def forward(self, noised_and_cover):
+    def forward(self, noised_and_cover, noiser_params=None):
         noised_image = noised_and_cover[0]
         # crop_rectangle is in form (from, to) where @from and @to are 2D points -- (height, width)
 
-        h_start, h_end, w_start, w_end = get_random_rectangle_inside(noised_image, self.height_ratio_range, self.width_ratio_range)
+        if noiser_params is not None:
+            h_start, h_end, w_start, w_end = noiser_params
+        else:
+            h_start, h_end, w_start, w_end = get_random_rectangle_inside(
+                noised_image, self.height_ratio_range, self.width_ratio_range
+            )
 
-        noised_and_cover[0] = noised_image[
-               :,
-               :,
-               h_start: h_end,
-               w_start: w_end].clone()
+        noised_and_cover[0] = noised_image[:, :, h_start:h_end, w_start:w_end].clone()
 
         return noised_and_cover
