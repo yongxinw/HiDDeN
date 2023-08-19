@@ -6,7 +6,6 @@ import pickle
 import utils
 import logging
 import sys
-
 from options import *
 from model.hidden import Hidden
 from noise_layers.noiser import Noiser
@@ -85,6 +84,7 @@ def main():
         help="Enable mixed-precision training.",
     )
 
+    new_run_parser.add_argument("--noise_same_on_batch", action="store_true")
     new_run_parser.add_argument(
         "--noise",
         nargs="*",
@@ -215,7 +215,9 @@ def main():
     # device_ids = list(range(torch.cuda.device_count()))
     noiser = Noiser(noise_config, device)
     model = Hidden(hidden_config, device, noiser, tb_logger)
+    # import ipdb
 
+    # ipdb.set_trace()
     if args.command == "continue":
         # if we are continuing, we have to load the model params
         assert checkpoint is not None

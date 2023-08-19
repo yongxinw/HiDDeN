@@ -18,3 +18,12 @@ do
     CUDA_VISIBLE_DEVICES=0 python test_model_watermark.py --run_name run_HiDDeN_wm_512_ep${epoch}_gaussian_std --options-file /efs/users/yongxinw/experiments/HiDDeN_512-DP-lr1e-3-bs48-500ep-coco17-crop_cropOut_drop_jpeg/runs/combined-noise--2023.08.05--06-57-33/options-and-config.pickle --checkpoint-file /efs/users/yongxinw/experiments/HiDDeN_512-DP-lr1e-3-bs48-500ep-coco17-crop_cropOut_drop_jpeg/runs/combined-noise--2023.08.05--06-57-33/checkpoints/combined-noise--epoch-${epoch}.pyt --end 1000 --with_tracking --gaussian_std 0.1
     CUDA_VISIBLE_DEVICES=0 python test_model_watermark.py --run_name run_HiDDeN_wm_512_ep${epoch}_brightness --options-file /efs/users/yongxinw/experiments/HiDDeN_512-DP-lr1e-3-bs48-500ep-coco17-crop_cropOut_drop_jpeg/runs/combined-noise--2023.08.05--06-57-33/options-and-config.pickle --checkpoint-file /efs/users/yongxinw/experiments/HiDDeN_512-DP-lr1e-3-bs48-500ep-coco17-crop_cropOut_drop_jpeg/runs/combined-noise--2023.08.05--06-57-33/checkpoints/combined-noise--epoch-${epoch}.pyt --end 1000 --with_tracking --brightness_factor 6
 done
+
+
+python main.py new \
+--name 'combined-noise' \
+--data-dir /efs/users/yongxinw/data/mscoco/for_hidden/ \
+--batch-size 32 \
+--noise  "crop((0.4,0.55),(0.4,0.55))+cropout((0.25,0.35),(0.25,0.35))+dropout(0.25,0.35)+resize(0.4,0.6)+jpeg()" \
+--epochs 500 --size 512 \
+--runs_folder /efs/users/yongxinw/experiments/HiDDeN_512-DP-Test

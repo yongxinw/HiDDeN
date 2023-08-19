@@ -1,15 +1,24 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from noise_layers.cropout import Cropout
-from noise_layers.resize import Resize
+from torchvision.transforms import functional as TF
 
-from options import HiDDenConfiguration
+
 from model.discriminator import Discriminator
 from model.encoder_decoder import EncoderDecoder
-from vgg_loss import VGGLoss
-from noise_layers.noiser import Noiser
 from noise_layers.crop import Crop, get_random_rectangle_inside, random_float
+from noise_layers.crop_scale import CropScale
+from noise_layers.cropout import Cropout
+from noise_layers.dropout import Dropout
+from noise_layers.gaussian_blur import GaussianBlur
+from noise_layers.gaussian_noise import GaussianNoise
+
+from noise_layers.jpeg_compress import JPEGCompression
+from noise_layers.noiser import Noiser
+from noise_layers.resize import Resize
+from noise_layers.rotation import Rotation
+from options import HiDDenConfiguration
+from vgg_loss import VGGLoss
 
 
 class Hidden:
@@ -92,13 +101,13 @@ class Hidden:
             # train on cover
             d_target_label_cover = torch.full(
                 (batch_size, 1), self.cover_label, device=self.device
-            )
+            ).to(torch.float32)
             d_target_label_encoded = torch.full(
                 (batch_size, 1), self.encoded_label, device=self.device
-            )
+            ).to(torch.float32)
             g_target_label_encoded = torch.full(
                 (batch_size, 1), self.cover_label, device=self.device
-            )
+            ).to(torch.float32)
 
             d_on_cover = self.discriminator(images)
             d_loss_on_cover = self.bce_with_logits_loss(
@@ -127,6 +136,28 @@ class Hidden:
                 noiser_layer_idx=noise_layer_idx,
                 noiser_params=noiser_params,
             )
+            # import ipdb
+
+            # ipdb.set_trace()
+            noised_images_pil = TF.to_pil_image(
+                (noised_images[0].cpu().clamp(-1, 1) + 1) / 2
+            )
+            # noised_images_pil = TF.to_pil_image(noised_images[0].cpu())
+            if isinstance(_noiser_layer, CropScale):
+                noised_images_pil.save("noised_images_cr_cs.png")
+            elif isinstance(_noiser_layer, Cropout):
+                noised_images_pil.save("noised_images_cr_co.png")
+            elif isinstance(_noiser_layer, GaussianBlur):
+                noised_images_pil.save("noised_images_gaussian_blur.png")
+            elif isinstance(_noiser_layer, GaussianNoise):
+                noised_images_pil.save("noised_images_gaussian_noise.png")
+            elif isinstance(_noiser_layer, JPEGCompression):
+                noised_images_pil.save("noised_images_jpeg.png")
+            elif isinstance(_noiser_layer, Rotation):
+                noised_images_pil.save("noised_images_rotation.png")
+            elif isinstance(_noiser_layer, Dropout):
+                noised_images_pil.save("noised_images_dropout.png")
+
             d_on_encoded = self.discriminator(encoded_images.detach())
             d_loss_on_encoded = self.bce_with_logits_loss(
                 d_on_encoded, d_target_label_encoded

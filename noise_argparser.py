@@ -1,12 +1,19 @@
 import argparse
 import re
-from noise_layers.cropout import Cropout
+
 from noise_layers.crop import Crop
-from noise_layers.identity import Identity
+from noise_layers.crop_scale import CropScale
+from noise_layers.cropout import Cropout
 from noise_layers.dropout import Dropout
-from noise_layers.resize import Resize
+from noise_layers.gaussian_blur import GaussianBlur
+from noise_layers.gaussian_noise import GaussianNoise
+from noise_layers.identity import Identity
+
+# from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.jpeg_compress import JPEGCompression
 from noise_layers.quantization import Quantization
-from noise_layers.jpeg_compression import JpegCompression
+from noise_layers.resize import Resize
+from noise_layers.rotation import Rotation
 
 
 def parse_pair(match_groups):
@@ -50,6 +57,59 @@ def parse_resize(resize_command):
     min_ratio = float(ratios[0])
     max_ratio = float(ratios[1])
     return Resize((min_ratio, max_ratio))
+
+
+def parse_crop_scale(namespace, crop_scale_command):
+    matches = re.match(
+        r"crop_scale\(\((\d+\.*\d*,\d+\.*\d*)\),\((\d+\.*\d*,\d+\.*\d*)\)\)",
+        crop_scale_command,
+    )
+    scales = matches.groups()[0].split(",")
+    min_scale = float(scales[0])
+    max_scale = float(scales[1])
+    ratios = matches.groups()[1].split(",")
+    min_ratio = float(ratios[0])
+    max_ratio = float(ratios[1])
+    return CropScale(
+        size=[namespace.size, namespace.size],
+        scale=(min_scale, max_scale),
+        ratio=(min_ratio, max_ratio),
+        same_on_batch=namespace.noise_same_on_batch,
+    )
+
+
+def parse_rotation(namespace, rotation_command):
+    matches = re.match(r"rotation\((\d+\.*\d*)\)", rotation_command)
+    angle = float(matches.groups()[0])
+    return Rotation(degrees=angle, same_on_batch=namespace.noise_same_on_batch)
+
+
+def parse_jpeg_compression(namespace, jpeg_command):
+    matches = re.match(r"jpeg_compression\((\d+\.*\d*,\d+\.*\d*)\)", jpeg_command)
+    qualities = matches.groups()[0].split(",")
+    min_quality = float(qualities[0])
+    max_quality = float(qualities[1])
+    return JPEGCompression(
+        size=(namespace.size, namespace.size), quality_range=(min_quality, max_quality)
+    )
+
+
+def parse_gaussian_blur(namespace, gaussian_blur_command):
+    matches = re.match(r"gaussian_blur\((\d+\.*\d*,\d+\.*\d*)\)", gaussian_blur_command)
+    sigmas = matches.groups()[0].split(",")
+    min_sigma = float(sigmas[0])
+    max_sigma = float(sigmas[1])
+    return GaussianBlur(
+        kernel_size=3,
+        sigma=(min_sigma, max_sigma),
+        same_on_batch=namespace.noise_same_on_batch,
+    )
+
+
+def parse_gaussian_noise(namespace, gaussian_noise_command):
+    matches = re.match(r"gaussian_noise\((\d+\.*\d*)\)", gaussian_noise_command)
+    std = float(matches.groups()[0])
+    return GaussianNoise(std=std, same_on_batch=namespace.noise_same_on_batch)
 
 
 class NoiseArgParser(argparse.Action):
@@ -97,16 +157,26 @@ class NoiseArgParser(argparse.Action):
             command = command.replace(" ", "")
             if command[: len("cropout")] == "cropout":
                 layers.append(parse_cropout(command))
-            elif command[: len("crop")] == "crop":
-                layers.append(parse_crop(command))
+            # elif command[: len("crop")] == "crop":
+            #     layers.append(parse_crop(command))
             elif command[: len("dropout")] == "dropout":
                 layers.append(parse_dropout(command))
-            elif command[: len("resize")] == "resize":
-                layers.append(parse_resize(command))
-            elif command[: len("jpeg")] == "jpeg":
-                layers.append("JpegPlaceholder")
-            elif command[: len("quant")] == "quant":
-                layers.append("QuantizationPlaceholder")
+            # elif command[: len("resize")] == "resize":
+            #     layers.append(parse_resize(command))
+            # elif command[: len("jpeg")] == "jpeg":
+            #     layers.append("JpegPlaceholder")
+            # elif command[: len("quant")] == "quant":
+            #     layers.append("QuantizationPlaceholder")
+            elif command[: len("crop_scale")] == "crop_scale":
+                layers.append(parse_crop_scale(namespace, command))
+            elif command[: len("rotation")] == "rotation":
+                layers.append(parse_rotation(namespace, command))
+            elif command[: len("gaussian_blur")] == "gaussian_blur":
+                layers.append(parse_gaussian_blur(namespace, command))
+            elif command[: len("gaussian_noise")] == "gaussian_noise":
+                layers.append(parse_gaussian_noise(namespace, command))
+            elif command[: len("jpeg_compression")] == "jpeg_compression":
+                layers.append(parse_jpeg_compression(namespace, command))
             elif command[: len("identity")] == "identity":
                 # We are adding one Identity() layer in Noiser anyway
                 pass
