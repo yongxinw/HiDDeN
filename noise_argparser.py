@@ -179,7 +179,7 @@ class NoiseArgParser(argparse.Action):
                 layers.append(parse_jpeg_compression(namespace, command))
             elif command[: len("identity")] == "identity":
                 # We are adding one Identity() layer in Noiser anyway
-                pass
+                layers.append(Identity())
             else:
                 raise ValueError("Command not recognized: \n{}".format(command))
             # TODO: Add gaussian noise/filter layers

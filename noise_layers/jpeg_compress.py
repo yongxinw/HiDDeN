@@ -30,4 +30,6 @@ class JPEGCompression(nn.Module):
             height=self.height, width=self.width, differentiable=True, quality=quality
         ).to(noised_image.device)
         noised_and_cover[0] = diff_jpeg(noised_image)
+        # noised_and_cover[0] = noised_image
+        # noised_and_cover[1] = cover_image
         return noised_and_cover

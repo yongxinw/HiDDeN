@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 from model.encoder import Encoder
 from model.decoder import Decoder
 from options import HiDDenConfiguration

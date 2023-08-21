@@ -165,13 +165,15 @@ def get_data_loaders(
             train_images,
             batch_size=train_options.batch_size,
             shuffle=True,
-            num_workers=4,
+            num_workers=16,
+            pin_memory=True,
         )
         validation_loader = torch.utils.data.DataLoader(
             validation_images,
             batch_size=train_options.batch_size,
-            shuffle=False,
-            num_workers=4,
+            # shuffle=False,
+            num_workers=16,
+            pin_memory=True,
         )
         return train_loader, validation_loader
 
@@ -201,10 +203,10 @@ def create_folder_for_run(runs_folder, experiment_name):
     this_run_folder = os.path.join(
         runs_folder, f'{experiment_name} {time.strftime("%Y.%m.%d--%H-%M-%S")}'
     )
-
-    os.makedirs(this_run_folder)
-    os.makedirs(os.path.join(this_run_folder, "checkpoints"))
-    os.makedirs(os.path.join(this_run_folder, "images"))
+    if not os.path.exists(this_run_folder):
+        os.makedirs(this_run_folder)
+        os.makedirs(os.path.join(this_run_folder, "checkpoints"))
+        os.makedirs(os.path.join(this_run_folder, "images"))
 
     return this_run_folder
 
